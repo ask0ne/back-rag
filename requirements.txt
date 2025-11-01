@@ -1,0 +1,42 @@
+# Core Framework
+fastapi==0.104.1
+uvicorn==0.24.0
+pydantic==2.5.0
+
+# LangChain and LangGraph
+langchain==0.1.10
+langchain-community
+langchain-openai
+langchain-chroma
+langgraph==0.0.20
+
+# Vector Database
+chromadb==0.4.22
+
+# Document Processing
+pypdf==3.17.4
+python-multipart==0.0.6
+
+# Web Search
+duckduckgo-search==8.1.1
+
+# OpenAI
+openai==1.6.1
+
+# Embeddings and Text Processing
+sentence-transformers==2.3.1
+numpy>=1.26.0
+
+# Utilities
+python-dotenv==1.0.0
+httpx==0.26.0
+requests==2.31.0
+markdown==3.9
+
+# Testing (optional)
+pytest==7.4.3
+pytest-asyncio==0.21.1
+
+# Development
+black==23.12.1
+flake8==6.1.0

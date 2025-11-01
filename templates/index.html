@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BackRAG Document Search with Web Back</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'bg-primary': '#272932',
+                        'text-primary': '#E7ECEF',
+                        'highlight': '#DB585A',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #272932;
+            color: #E7ECEF;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #DB585A;
+            box-shadow: 0 0 0 3px rgba(219, 88, 90, 0.1);
+        }
+
+        .loader {
+            border: 3px solid #E7ECEF;
+            border-top: 3px solid #DB585A;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .htmx-request .loader {
+            display: inline-block;
+        }
+
+        .htmx-request .search-btn-text {
+            display: none;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(219, 88, 90, 0.3);
+        }
+
+        .search-btn:active {
+            transform: translateY(0);
+        }
+
+        .refresh-btn {
+            background-color: rgba(231, 236, 239, 0.1);
+            border: 1px solid rgba(231, 236, 239, 0.3);
+        }
+
+        .refresh-btn:hover {
+            background-color: rgba(231, 236, 239, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .refresh-btn:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="w-full max-w-5xl space-y-6">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-light mb-2" style="color: #E7ECEF;">BackRAG</h1>
+            <p class="text-sm opacity-70" style="color: #E7ECEF;">Document Intelligence with Web Search Fallback</p>
+        </div>
+
+        <!-- Search Form -->
+        <form hx-post="/api/search" hx-target="#results" hx-indicator="#loading" class="space-y-4">
+            <div class="relative">
+                <input type="text" name="query" placeholder="Ask me anything..." required
+                    class="search-box w-full px-6 py-4 rounded-lg border-2 text-lg transition-colors"
+                    style="background-color: #272932; border-color: #E7ECEF; color: #E7ECEF;" autocomplete="off">
+            </div>
+
+            <!-- Model Info Section -->
+            <div id="model-info" hx-get="/stats"
+            hx-target="this" hx-trigger="load" hx-swap="innerHTML" class="text-xs opacity-60 px-2 py-2 rounded" style="color: #E7ECEF; background-color: rgba(231, 236, 239, 0.03);">Loading model info...</div>
+
+            <div class="flex items-center justify-between">
+                <div class="flex flex-col space-y-1">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs font-medium" style="color: #E7ECEF;">Document</span>
+                        <input type="range" id="threshold" name="threshold" min="0" max="1" step="0.1" value="0.7"
+                            class="w-48 accent-[#DB585A]" oninput="document.getElementById('thresholdValue').textContent = this.value">
+                        <span class="text-xs font-medium" style="color: #E7ECEF;">Web</span>
+                    </div>
+                    <div class="text-center">
+                        <span class="text-xs" style="color: rgba(231, 236, 239, 0.7);">Confidence: </span>
+                        <span id="thresholdValue" class="text-sm font-mono font-bold" style="color: #DB585A;">0.7</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <button type="button" hx-post="/refresh-memory" hx-target="#refresh-status" hx-indicator="#refresh-loading"
+                        class="refresh-btn px-4 py-3 rounded-lg text-sm font-medium transition-all flex items-center space-x-2"
+                        style="color: #E7ECEF;">
+                        <span class="refresh-btn-text">Re-Scan Documents</span>
+                        <div id="refresh-loading" class="loader hidden htmx-indicator"></div>
+                    </button>
+                    <button type="submit"
+                        class="search-btn px-8 py-3 rounded-lg font-medium transition-all flex items-center space-x-2"
+                        style="background-color: #DB585A; color: #E7ECEF;">
+                        <span class="search-btn-text">Search</span>
+                        <div class="loader hidden"></div>
+                    </button>
+                </div>
+            </div>
+            <div id="refresh-status" class="text-center"></div>
+        </form>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="htmx-indicator text-center py-4">
+            <div class="inline-flex items-center space-x-3">
+                <div class="loader"></div>
+                <span style="color: #E7ECEF;">Searching...</span>
+            </div>
+        </div>
+
+        <!-- Results Container -->
+        <div id="results" class="space-y-6"></div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full mt-16 mb-8 text-center">
+        <div class="max-w-5xl mx-auto px-4 space-y-3">
+            <div class="flex items-center justify-center space-x-3 text-sm opacity-70" style="color: #E7ECEF;">
+                <span class="flex items-center space-x-1">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 3.5a1.5 1.5 0 013 0V4a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-.5a1.5 1.5 0 000 3h.5a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-.5a1.5 1.5 0 00-3 0v.5a1 1 0 01-1 1H6a1 1 0 01-1-1v-3a1 1 0 00-1-1h-.5a1.5 1.5 0 010-3H4a1 1 0 001-1V6a1 1 0 011-1h3a1 1 0 001-1v-.5z"/>
+                    </svg>
+                    <span>Built with fastapi, tailwind css, langchain and chromadb</span>
+                </span>
+            </div>
+            <div class="text-sm opacity-60" style="color: #E7ECEF;">
+                Developed by <a href="https://whelmedthinker.com" target="_blank" class="font-medium hover:opacity-100 transition-opacity" style="color: #DB585A;">whelmedthinker</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Prevent form submission animation issues
+        document.body.addEventListener('htmx:afterSwap', function (event) {
+            if (event.detail.target.id === 'results') {
+                event.detail.target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            // Handle refresh memory response
+            if (event.detail.target.id === 'refresh-status') {
+                try {
+                    const response = JSON.parse(event.detail.xhr.response);
+                    const statusDiv = event.detail.target;
+
+                    if (response.message) {
+                        statusDiv.innerHTML = `
+                            <div class="inline-block px-4 py-2 rounded-lg text-sm" style="background-color: rgba(74, 222, 128, 0.2); color: #4ade80;">
+                                ✓ ${response.message}
+                                <span class="font-mono ml-2">${response.documents_processed} chunks indexed</span>
+                            </div>
+                        `;
+                    }
+
+                    // Clear status after 5 seconds
+                    setTimeout(() => {
+                        statusDiv.innerHTML = '';
+                    }, 5000);
+                } catch (e) {
+                    console.error('Error parsing refresh response:', e);
+                }
+            }
+        });
+
+        // Handle refresh memory errors
+        document.body.addEventListener('htmx:responseError', function (event) {
+            if (event.detail.target.id === 'refresh-status') {
+                const statusDiv = event.detail.target;
+                statusDiv.innerHTML = `
+                    <div class="inline-block px-4 py-2 rounded-lg text-sm" style="background-color: rgba(219, 88, 90, 0.2); color: #DB585A;">
+                        ⚠️ Failed to refresh memory
+                    </div>
+                    
+                `;
+
+                // Clear error after 5 seconds
+                setTimeout(() => {
+                    statusDiv.innerHTML = '';
+                }, 5000);
+            }
+        });
+    </script>
+</body>
+
+</html>
