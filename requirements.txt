@@ -15,7 +15,7 @@ chromadb==0.4.22
 
 # Document Processing
 pypdf==3.17.4
-python-multipart==0.0.6
+python-multipart==0.0.18
 
 # Web Search
 duckduckgo-search==8.1.1
