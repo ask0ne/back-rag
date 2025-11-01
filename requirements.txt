@@ -30,7 +30,7 @@ numpy>=1.26.0
 # Utilities
 python-dotenv==1.0.0
 httpx==0.26.0
-requests==2.31.0
+requests==2.32.4
 markdown==3.9
 
 # Testing (optional)
