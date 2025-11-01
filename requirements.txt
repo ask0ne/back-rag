@@ -4,7 +4,7 @@ uvicorn==0.24.0
 pydantic==2.5.0
 
 # LangChain and LangGraph
-langchain==0.1.10
+langchain==0.2.5
 langchain-community
 langchain-openai
 langchain-chroma
