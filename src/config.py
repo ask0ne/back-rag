@@ -24,7 +24,7 @@ class Config:
     TOP_K_DOCUMENTS: int = int(os.getenv("TOP_K_DOCUMENTS", "5"))
     
     # Web Search Configuration
-    WEB_SEARCH_MAX_RESULTS: int = int(os.getenv("WEB_SEARCH_MAX_RESULTS", "1"))
+    WEB_SEARCH_MAX_RESULTS: int = int(os.getenv("WEB_SEARCH_MAX_RESULTS", "3"))
     
     # LLM Configuration
     MODEL_NAME: str = os.getenv("MODEL_NAME", "gpt-4o-mini")

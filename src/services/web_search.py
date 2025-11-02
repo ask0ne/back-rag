@@ -50,15 +50,14 @@ Provide a clear, well-structured answer:""",
                 results = list(ddgs.text(
                     keywords=query,
                     max_results=max_results,
-                    region='wt-wt',
-                    safesearch='moderate',
-                    timelimit='y'  # Results from past year
+                    region="us-en",
                 ))
             
             logger.info(f"Found {len(results)} web search results for query: {query[:50]}...")
             return results
         
         except Exception as e:
+            print(e)
             # Log the specific error but return empty list to allow graceful fallback
             logger.warning(f"Web search failed (possibly rate limited): {e}")
             return []
@@ -144,13 +143,14 @@ Provide a clear, well-structured answer:""",
         try:
             # Search the web
             search_results = self.search_web(query)
-            
+            print(f"Search results: {search_results}")
             # Generate answer from search results
             result = self.generate_web_answer(query, search_results)
-            
+            print(f"Generated answer: {result}")
             return result
         
         except Exception as e:
+            print(e)
             logger.error(f"Web search and answer failed: {e}")
             return {
                 "answer": f"■ This answer was found on the web.\n\nI encountered an error while searching the web: {str(e)}",

@@ -295,12 +295,10 @@ async def refresh_memory(services=Depends(get_services)):
     try:
         # Load documents from the documents directory if it exists
         documents_dir = Path("./documents")
-        documents = None
+        chunks = None
         if documents_dir.exists():
             logging.info(f"Loading documents from {documents_dir}...")
-            chunks = document_service.load_documents_from_directory(
-                str(documents_dir)
-            )
+            chunks = document_service.load_documents_from_directory(str(documents_dir))
 
         if chunks:
             # Index documents
